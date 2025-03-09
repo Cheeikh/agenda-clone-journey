@@ -1,136 +1,41 @@
-import React, { useState, useEffect } from 'react';
-import { addDays, format, isSameDay, isSameMonth, startOfMonth, parseISO } from 'date-fns';
-import { fr } from 'date-fns/locale';
-import { CalendarEvent, CalendarView, getDaysInMonth, getWeekDays, isToday, isCurrentMonth, getEventsForDate, generateTimeSlots } from '@/lib/calendar';
-import { cn } from '@/lib/utils';
+import React from 'react';
 import { Header } from './Header';
 import { CalendarSidebar } from './Sidebar';
 import { EventModal } from './EventModal';
 import { DraggableMonthView } from './DraggableMonthView';
-import { toast } from "@/hooks/use-toast";
+import { generateTimeSlots, getEventsForDate, getWeekDays, getDaysInMonth } from '@/lib/calendar';
+import { cn } from '@/lib/utils';
+import { format, isSameDay } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { useCalendar } from '@/contexts/CalendarContext';
+import { useSidebar } from '@/components/ui/sidebar';
 
 export const Calendar: React.FC = () => {
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [view, setView] = useState<CalendarView>('month');
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [isEventModalOpen, setIsEventModalOpen] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | undefined>(undefined);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [timeZone, setTimeZone] = useState('Europe/Paris');
+  const { state: sidebarState } = useSidebar();
+  const isSidebarOpen = sidebarState === 'expanded';
   
-  // Initialize with some mock events
-  useEffect(() => {
-    // Adjust mock events to current month
-    const today = new Date();
-    const eventsData = [
-      {
-        id: '1',
-        title: 'Réunion d\'équipe',
-        start: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 10, 0),
-        end: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 11, 30),
-        description: 'Réunion hebdomadaire d\'équipe',
-        color: 'blue',
-      },
-      {
-        id: '2',
-        title: 'Déjeuner avec client',
-        start: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1, 12, 30),
-        end: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1, 14, 0),
-        location: 'Restaurant Le Français',
-        color: 'green',
-      },
-      {
-        id: '3',
-        title: 'Présentation projet',
-        start: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 2, 15, 0),
-        end: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 2, 16, 30),
-        description: 'Présentation du nouveau projet aux stakeholders',
-        color: 'purple',
-      },
-      {
-        id: '4',
-        title: 'Jour férié',
-        start: new Date(today.getFullYear(), today.getMonth(), 15),
-        end: new Date(today.getFullYear(), today.getMonth(), 15, 23, 59),
-        allDay: true,
-        color: 'red',
-      }
-    ];
-    setEvents(eventsData as CalendarEvent[]);
-  }, []);
-
-  const handlePrevious = () => {
-    if (view === 'month') {
-      setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
-    } else if (view === 'week') {
-      setCurrentDate(addDays(currentDate, -7));
-    } else {
-      setCurrentDate(addDays(currentDate, -1));
-    }
-  };
-
-  const handleNext = () => {
-    if (view === 'month') {
-      setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
-    } else if (view === 'week') {
-      setCurrentDate(addDays(currentDate, 7));
-    } else {
-      setCurrentDate(addDays(currentDate, 1));
-    }
-  };
-
-  const handleToday = () => {
-    setCurrentDate(new Date());
-  };
-
-  const handleDateClick = (date: Date) => {
-    setSelectedDate(date);
-    setSelectedEvent(undefined);
-    setIsEventModalOpen(true);
-  };
-
-  const handleEventClick = (event: CalendarEvent) => {
-    setSelectedEvent(event);
-    setSelectedDate(undefined);
-    setIsEventModalOpen(true);
-  };
-
-  const handleSaveEvent = (eventData: Partial<CalendarEvent>) => {
-    if (selectedEvent) {
-      // Update existing event
-      setEvents(events.map(e => e.id === selectedEvent.id ? { ...e, ...eventData } as CalendarEvent : e));
-      toast({
-        title: "Événement modifié",
-        description: "L'événement a été mis à jour avec succès.",
-      });
-    } else {
-      // Add new event
-      setEvents([...events, eventData as CalendarEvent]);
-      toast({
-        title: "Événement créé",
-        description: "L'événement a été créé avec succès.",
-      });
-    }
-  };
-
-  const handleCreateDragEvent = (start: Date, end: Date) => {
-    setSelectedDate(start);
-    setSelectedEvent(undefined);
-    
-    // Create a default end time (1 hour later on the same day)
-    const defaultEnd = new Date(start);
-    defaultEnd.setHours(defaultEnd.getHours() + 1);
-    
-    setIsEventModalOpen(true);
-  };
-
-  const handleTimeZoneChange = (newTimeZone: string) => {
-    setTimeZone(newTimeZone);
-    toast({
-      title: "Fuseau horaire modifié",
-      description: `Le fuseau horaire a été changé pour ${newTimeZone}.`,
-    });
-  };
+  const {
+    currentDate,
+    view,
+    events,
+    selectedEvent,
+    selectedDate,
+    isEventModalOpen,
+    timeZone,
+    handleDateClick,
+    handleEventClick,
+    handleSaveEvent,
+    handleDeleteEvent,
+    handleCreateDragEvent,
+    handleTimeZoneChange,
+    closeEventModal,
+    openEventModal,
+    handlePrevious,
+    handleNext,
+    handleToday,
+    setView,
+    setCurrentDate,
+  } = useCalendar();
 
   const renderMonthView = () => {
     const days = getDaysInMonth(currentDate);
@@ -173,7 +78,7 @@ export const Calendar: React.FC = () => {
                 </div>
                 <div className={cn(
                   "text-sm font-bold",
-                  isToday(day) && "text-primary"
+                  isSameDay(day, new Date()) && "text-primary"
                 )}>
                   {format(day, 'd', { locale: fr })}
                 </div>
@@ -261,7 +166,7 @@ export const Calendar: React.FC = () => {
               </div>
               <div className={cn(
                 "text-sm font-bold",
-                isToday(currentDate) && "text-primary"
+                isSameDay(currentDate, new Date()) && "text-primary"
               )}>
                 {format(currentDate, 'd MMMM', { locale: fr })}
               </div>
@@ -428,25 +333,35 @@ export const Calendar: React.FC = () => {
         onToday={handleToday}
         onViewChange={setView}
         onTimeZoneChange={handleTimeZoneChange}
-        onCreateEvent={() => {
-          setSelectedEvent(undefined);
-          setSelectedDate(new Date());
-          setIsEventModalOpen(true);
-        }}
+        onCreateEvent={openEventModal}
       />
       
       <div className="flex flex-1 overflow-hidden">
-        <CalendarSidebar 
-          currentDate={currentDate}
-          onChange={(date) => date && setCurrentDate(date)}
-        />
+        <div 
+          className={cn(
+            "h-full transition-all duration-300 ease-in-out overflow-hidden", 
+            isSidebarOpen ? "md:w-64 w-full" : "w-0"
+          )}
+          style={{ 
+            minWidth: isSidebarOpen ? "16rem" : "0",
+            position: isSidebarOpen ? "relative" : "absolute"
+          }}
+        >
+          <CalendarSidebar 
+            currentDate={currentDate}
+            onChange={(date) => date && setCurrentDate(date)}
+          />
+        </div>
         
-        {renderCalendarView()}
+        <main className="flex-1 overflow-auto relative">
+          {renderCalendarView()}
+        </main>
         
         <EventModal
           isOpen={isEventModalOpen}
-          onClose={() => setIsEventModalOpen(false)}
+          onClose={closeEventModal}
           onSave={handleSaveEvent}
+          onDelete={handleDeleteEvent}
           event={selectedEvent}
           selectedDate={selectedDate}
         />

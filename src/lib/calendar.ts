@@ -1,4 +1,3 @@
-
 import { format, startOfWeek, addDays, startOfMonth, endOfMonth, isSameMonth, isSameDay, addMonths, subMonths, parseISO, getHours, getMinutes } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -11,6 +10,11 @@ export type CalendarEvent = {
   description?: string;
   location?: string;
   allDay?: boolean;
+  recurrence?: 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom';
+  notification?: 'none' | '10min' | '30min' | '1hour' | '1day';
+  guests?: string[];
+  calendarType?: 'personal' | 'work' | 'family';
+  calendarId?: string; // ID du calendrier auquel appartient l'événement
 };
 
 export type CalendarView = 'month' | 'week' | 'day' | 'agenda';

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Clock } from 'lucide-react';
 import {
@@ -30,15 +29,15 @@ export const TimeZoneSelector: React.FC<TimeZoneSelectorProps> = ({
   ];
 
   return (
-    <div className="flex items-center space-x-2">
-      <Clock className="h-4 w-4 text-muted-foreground" />
+    <div className="flex items-center space-x-1 sm:space-x-2">
+      <Clock className="h-4 w-4 text-muted-foreground hidden sm:block" />
       <Select value={selectedTimeZone} onValueChange={onTimeZoneChange}>
-        <SelectTrigger className="w-[180px] h-8">
-          <SelectValue placeholder="Sélectionner fuseau horaire" />
+        <SelectTrigger className="w-[120px] sm:w-[180px] h-8 text-xs sm:text-sm">
+          <SelectValue placeholder="Fuseau horaire" />
         </SelectTrigger>
         <SelectContent>
           {timeZones.map((tz) => (
-            <SelectItem key={tz.value} value={tz.value}>
+            <SelectItem key={tz.value} value={tz.value} className="text-xs sm:text-sm">
               {tz.label}
             </SelectItem>
           ))}
