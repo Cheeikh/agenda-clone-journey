@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { addDays, format, isSameDay, isSameMonth, startOfMonth, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -7,6 +6,8 @@ import { cn } from '@/lib/utils';
 import { Header } from './Header';
 import { CalendarSidebar } from './Sidebar';
 import { EventModal } from './EventModal';
+import { DraggableMonthView } from './DraggableMonthView';
+import { toast } from "@/hooks/use-toast";
 
 export const Calendar: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -15,6 +16,7 @@ export const Calendar: React.FC = () => {
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | undefined>(undefined);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [timeZone, setTimeZone] = useState('Europe/Paris');
   
   // Initialize with some mock events
   useEffect(() => {
@@ -97,83 +99,51 @@ export const Calendar: React.FC = () => {
     if (selectedEvent) {
       // Update existing event
       setEvents(events.map(e => e.id === selectedEvent.id ? { ...e, ...eventData } as CalendarEvent : e));
+      toast({
+        title: "Événement modifié",
+        description: "L'événement a été mis à jour avec succès.",
+      });
     } else {
       // Add new event
       setEvents([...events, eventData as CalendarEvent]);
+      toast({
+        title: "Événement créé",
+        description: "L'événement a été créé avec succès.",
+      });
     }
+  };
+
+  const handleCreateDragEvent = (start: Date, end: Date) => {
+    setSelectedDate(start);
+    setSelectedEvent(undefined);
+    
+    // Create a default end time (1 hour later on the same day)
+    const defaultEnd = new Date(start);
+    defaultEnd.setHours(defaultEnd.getHours() + 1);
+    
+    setIsEventModalOpen(true);
+  };
+
+  const handleTimeZoneChange = (newTimeZone: string) => {
+    setTimeZone(newTimeZone);
+    toast({
+      title: "Fuseau horaire modifié",
+      description: `Le fuseau horaire a été changé pour ${newTimeZone}.`,
+    });
   };
 
   const renderMonthView = () => {
     const days = getDaysInMonth(currentDate);
-    const startDate = startOfMonth(currentDate);
-    const dayNames = ['LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM', 'DIM'];
     
     return (
-      <div className="flex-1 overflow-auto">
-        <div className="grid grid-cols-7 px-4 py-2 text-xs font-medium text-muted-foreground">
-          {dayNames.map((day) => (
-            <div key={day} className="flex justify-center">
-              {day}
-            </div>
-          ))}
-        </div>
-        <div className="grid grid-cols-7 h-full bg-white dark:bg-gray-950">
-          {days.map((day, i) => {
-            const isToday = isSameDay(day, new Date());
-            const isCurrentMonthDay = isSameMonth(day, currentDate);
-            const dayEvents = events.filter(event => isSameDay(event.start, day));
-            
-            return (
-              <div
-                key={i}
-                className={cn(
-                  "min-h-[100px] p-1 border-t border-r border-border relative transition-colors duration-200",
-                  !isCurrentMonthDay && "bg-muted/30 text-muted-foreground",
-                  isToday && "bg-calendar-today"
-                )}
-                onClick={() => handleDateClick(day)}
-              >
-                <div className={cn(
-                  "flex justify-end text-sm font-medium p-1",
-                  isToday && "text-primary"
-                )}>
-                  {format(day, 'd')}
-                </div>
-                <div className="space-y-1 min-h-[80px]">
-                  {dayEvents.slice(0, 3).map((event) => (
-                    <div
-                      key={event.id}
-                      className={cn(
-                        "bg-calendar-event text-white text-xs p-1 rounded truncate cursor-pointer hover:bg-calendar-event-hover transition-colors",
-                        `bg-${event.color}-500 hover:bg-${event.color}-600`
-                      )}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEventClick(event);
-                      }}
-                    >
-                      {event.allDay ? (
-                        <span className="font-medium">{event.title}</span>
-                      ) : (
-                        <>
-                          <span className="font-medium">
-                            {format(event.start, 'HH:mm')} • {event.title}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  ))}
-                  {dayEvents.length > 3 && (
-                    <div className="text-xs text-muted-foreground mt-1 text-right">
-                      +{dayEvents.length - 3} autre{dayEvents.length - 3 > 1 ? 's' : ''}
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      <DraggableMonthView 
+        days={days}
+        currentDate={currentDate}
+        events={events}
+        onDateClick={handleDateClick}
+        onEventClick={handleEventClick}
+        onCreateEvent={handleCreateDragEvent}
+      />
     );
   };
 
@@ -452,10 +422,12 @@ export const Calendar: React.FC = () => {
       <Header
         currentDate={currentDate}
         view={view}
+        timeZone={timeZone}
         onPrevious={handlePrevious}
         onNext={handleNext}
         onToday={handleToday}
         onViewChange={setView}
+        onTimeZoneChange={handleTimeZoneChange}
         onCreateEvent={() => {
           setSelectedEvent(undefined);
           setSelectedDate(new Date());

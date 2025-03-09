@@ -9,25 +9,30 @@ import {
   getMonthLabel, 
   getDayLabel 
 } from '@/lib/calendar';
+import { TimeZoneSelector } from './TimeZoneSelector';
 
 interface HeaderProps {
   currentDate: Date;
   view: CalendarView;
+  timeZone: string;
   onPrevious: () => void;
   onNext: () => void;
   onToday: () => void;
   onViewChange: (view: CalendarView) => void;
   onCreateEvent: () => void;
+  onTimeZoneChange: (timeZone: string) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   currentDate,
   view,
+  timeZone,
   onPrevious,
   onNext,
   onToday,
   onViewChange,
-  onCreateEvent
+  onCreateEvent,
+  onTimeZoneChange
 }) => {
   return (
     <header className="h-16 border-b border-border flex items-center px-4 gap-2 bg-white dark:bg-gray-950 z-10 shadow-sm">
@@ -63,7 +68,12 @@ export const Header: React.FC<HeaderProps> = ({
          getMonthLabel(currentDate)}
       </h1>
       
-      <div className="ml-auto flex gap-1">
+      <div className="ml-auto flex items-center gap-3">
+        <TimeZoneSelector 
+          selectedTimeZone={timeZone} 
+          onTimeZoneChange={onTimeZoneChange} 
+        />
+        
         <div className="relative hidden md:block w-64">
           <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
           <Input 
